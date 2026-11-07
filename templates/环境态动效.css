@@ -1,0 +1,333 @@
+/* ============================================================
+   环境态动效库 · 页面停留期间持续运动（40 种）
+   用法：整段粘进 index.html 的 <style> 末尾（或 @import）。
+   前提：翻页用 .slide 切页、当前页带 .on 类。类名不同就全局替换 .on。
+   完整清单、参数说明、组合配方见 references/环境态动效库.md
+
+   【可见性第一】默认参数是「肉眼明显看得出在动」，不是「几乎察觉不到」。
+   旧版 48s 推镜 + 1.5% 位移，1 秒只走 0.6px，验活能过但人眼看不见 —— 已废弃。
+
+   三条硬约束：
+   1. 只用 transform 和 opacity，不动 width/height/filter/box-shadow/background-position
+   2. 关键帧 0% 必须等于入场结束时的静止状态；文件末尾「静止态预置」已统一处理，别手改
+   3. 挂了环境态的元素，外面必须再包一层负责入场（.a），两套动画绝不落同一个元素
+
+   基础 5 类（保持兼容）：.ib-bg / .ib-glow / .ib-img / .ib-text / .ib-spin
+   扩展类：A–E 五层 34 种 + F 强可见层 6 种
+   ============================================================ */
+
+:root {
+  /* 启动时机：等最长入场动画跑完 */
+  --idle-start: 1.6s;
+
+  /* 周期阶梯（近似互质，避免周期性一起复位）—— 全部压在 5–28s，肉眼可感 */
+  --t-blink: 1.1s;    /* 光标闪烁，仅封面 */
+  --t-fast: 5s;       /* 呼吸、脉动、环形、波浪 */
+  --t-mid: 8s;        /* 光斑、浮动、光带、线条 */
+  --t-med: 11s;       /* 明暗、倾斜、溶解、环绕 */
+  --t-slow: 14s;      /* 平移、噪点、星点、跑马灯 */
+  --t-slower: 18s;    /* 推镜、图片缓移、视差 */
+  --t-glacial: 23s;   /* 拉远、网格 */
+  --t-rotate: 28s;    /* 缓转 */
+
+  /* 位移幅度：背景全幅层 1% ≈ 19px，5% ≈ 96px —— 要的就是看得见 */
+  --amp-xs: 1.5%;
+  --amp-s: 3%;
+  --amp-m: 5%;
+  --amp-l: 9%;
+  --amp-flow: 18%;    /* 光幕流动专用，幅度更大 */
+
+  /* 缩放幅度 */
+  --zoom-s: 1.10;
+  --zoom-m: 1.18;
+  --zoom-l: 1.30;
+
+  /* 明度区间：跨度必须够大，0.88→1 这种变化等于没动 */
+  --dim-hi: 1;
+  --dim-lo: .58;
+  --glow-lo: .14;
+  --glow-hi: .88;
+
+  /* 文字浮动（px，不能按百分比：span 很小） */
+  --rise: 10px;
+  --rise-wave: 16px;
+  /* 环绕半径（px）：transform 的百分比相对元素自身尺寸，挂在小圆点上会几乎不动 */
+  --orbit-r: 60px;
+
+  /* 相位错开（同一页多个动效别同步） */
+  --ph-1: 1.1s;
+  --ph-2: 2.3s;
+  --ph-3: 3.7s;
+
+  /* 缓动 */
+  --idle-ease: ease-in-out;
+}
+
+/* ===== A 背景层（8 种）======================================= */
+.slide.on .ib-bg,
+.slide.on .ib-bg-push { animation: aPush var(--t-slower) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aPush {
+  0%   { transform: scale(1.00) translate3d(0, 0, 0); }
+  50%  { transform: scale(var(--zoom-m)) translate3d(0, calc(-1 * var(--amp-s)), 0); }
+  100% { transform: scale(1.00) translate3d(0, 0, 0); }
+}
+.slide.on .ib-bg-pull { animation: aPull var(--t-glacial) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aPull {
+  0%   { transform: scale(var(--zoom-l)); }
+  50%  { transform: scale(1.00); }
+  100% { transform: scale(var(--zoom-l)); }
+}
+.slide.on .ib-bg-panx { animation: aPanX var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aPanX {
+  0%,100% { transform: translate3d(calc(-1 * var(--amp-m)), 0, 0); }
+  50%     { transform: translate3d(var(--amp-m), 0, 0); }
+}
+.slide.on .ib-bg-pany { animation: aPanY var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aPanY {
+  0%,100% { transform: translate3d(0, calc(-1 * var(--amp-m)), 0); }
+  50%     { transform: translate3d(0, var(--amp-m), 0); }
+}
+.slide.on .ib-bg-drift { animation: aDrift var(--t-slower) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aDrift {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(var(--amp-m), calc(-1 * var(--amp-s)), 0); }
+  50%  { transform: translate3d(var(--amp-s), var(--amp-m), 0); }
+  75%  { transform: translate3d(calc(-1 * var(--amp-m)), var(--amp-s), 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+.slide.on .ib-bg-turn { animation: aTurn var(--t-rotate) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aTurn {
+  0%,100% { transform: rotate(-3.5deg) scale(1.14); }
+  50%     { transform: rotate(3.5deg) scale(1.14); }
+}
+.slide.on .ib-bg-cross { animation: aCross var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aCross {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0; }
+}
+.slide.on .ib-bg-para-back { animation: aParaBack var(--t-slower) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aParaBack {
+  0%,100% { transform: translate3d(calc(-1 * var(--amp-l)), 0, 0) scale(1.16); }
+  50%     { transform: translate3d(var(--amp-l), 0, 0) scale(1.16); }
+}
+.slide.on .ib-bg-para-front { animation: aParaFront var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aParaFront {
+  0%,100% { transform: translate3d(calc(-1 * var(--amp-s)), 0, 0); }
+  50%     { transform: translate3d(var(--amp-s), 0, 0); }
+}
+
+/* ===== B 光影氛围层（7 种）=================================== */
+.slide.on .ib-glow { animation: aGlow var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aGlow {
+  0%   { opacity: var(--glow-lo); transform: translate3d(calc(-1 * var(--amp-m)), var(--amp-s), 0) scale(1.00); }
+  50%  { opacity: var(--glow-hi); transform: translate3d(var(--amp-m), calc(-1 * var(--amp-s)), 0) scale(var(--zoom-s)); }
+  100% { opacity: var(--glow-lo); transform: translate3d(calc(-1 * var(--amp-m)), var(--amp-s), 0) scale(1.00); }
+}
+.slide.on .ib-halo { animation: aHalo var(--t-fast) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aHalo {
+  0%,100% { opacity: var(--glow-lo); transform: scale(1.00); }
+  50%     { opacity: var(--glow-hi); transform: scale(var(--zoom-s)); }
+}
+.slide.on .ib-sweep { animation: aSweep var(--t-mid) var(--idle-start) linear infinite; }
+@keyframes aSweep {
+  0%   { transform: translate3d(-150%, 0, 0); opacity: 0; }
+  14%  { opacity: .9; }
+  86%  { opacity: .9; }
+  100% { transform: translate3d(150%, 0, 0); opacity: 0; }
+}
+.slide.on .ib-dim { animation: aDim var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aDim {
+  0%,100% { opacity: var(--dim-hi); }
+  50%     { opacity: var(--dim-lo); }
+}
+.slide.on .ib-vignette { animation: aVignette var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aVignette {
+  0%,100% { opacity: .30; transform: scale(1.00); }
+  50%     { opacity: .92; transform: scale(var(--zoom-s)); }
+}
+.slide.on .ib-grain { animation: aGrain var(--t-slow) linear infinite; }
+@keyframes aGrain {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(var(--amp-s), calc(-1 * var(--amp-s)), 0); }
+  50%  { transform: translate3d(calc(-1 * var(--amp-s)), var(--amp-s), 0); }
+  75%  { transform: translate3d(var(--amp-s), var(--amp-s), 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+.slide.on .ib-grid { animation: aGrid var(--t-glacial) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aGrid {
+  0%,100% { transform: translate3d(0, 0, 0); }
+  50%     { transform: translate3d(var(--amp-s), var(--amp-s), 0); }
+}
+
+/* ===== C 图片主体层（7 种）=================================== */
+.slide.on .ib-img { animation: aImgDrift var(--t-slower) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aImgDrift {
+  0%   { transform: scale(1.00) translate3d(0, 0, 0); }
+  50%  { transform: scale(var(--zoom-s)) translate3d(var(--amp-m), calc(-1 * var(--amp-s)), 0); }
+  100% { transform: scale(1.00) translate3d(0, 0, 0); }
+}
+.slide.on .ib-img-pan { animation: aImgPan var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aImgPan {
+  0%,100% { transform: translate3d(calc(-1 * var(--amp-s)), 0, 0) scale(1.14); }
+  50%     { transform: translate3d(var(--amp-s), 0, 0) scale(1.14); }
+}
+.slide.on .ib-img-tilt { animation: aTilt var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aTilt {
+  0%,100% { transform: perspective(1200px) rotateY(-6deg) rotateX(3deg) scale(1.06); }
+  50%     { transform: perspective(1200px) rotateY(6deg) rotateX(-3deg) scale(1.06); }
+}
+.slide.on .ib-img-window { animation: aWindow var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aWindow {
+  0%,100% { transform: scale(1.00); }
+  50%     { transform: scale(var(--zoom-s)); }
+}
+.slide.on .ib-img-cross { animation: aCross var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+.slide.on .ib-img-float { animation: aFloat var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aFloat {
+  0%,100% { transform: translate3d(0, var(--amp-xs), 0); }
+  50%     { transform: translate3d(0, calc(-1 * var(--amp-s)), 0); }
+}
+.slide.on .ib-img-zoomx { animation: aZoomX var(--t-slower) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aZoomX {
+  0%,100% { transform: scaleX(1.00); }
+  50%     { transform: scaleX(var(--zoom-s)); }
+}
+
+/* ===== D 文字层（6 种）======================================= */
+/* span 默认行内元素，transform 无效，必须 inline-block */
+.ib-text, .ib-float, .ib-stagger, .ib-tick, .ib-shimmer, .ib-wave { display: inline-block; }
+.slide.on .ib-text { animation: aText var(--t-fast) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aText {
+  0%   { opacity: var(--dim-hi); transform: translate3d(0, 0, 0); }
+  50%  { opacity: .84;          transform: translate3d(0, calc(-1 * var(--rise)), 0); }
+  100% { opacity: var(--dim-hi); transform: translate3d(0, 0, 0); }
+}
+.slide.on .ib-float { animation: aFloat var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+.slide.on .ib-shimmer { animation: aShimmer var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aShimmer {
+  0%,100% { opacity: 1; }
+  50%     { opacity: .55; }
+}
+.slide.on .ib-caret { animation: aCaret var(--t-blink) steps(1, end) infinite; }
+@keyframes aCaret {
+  0%,49%   { opacity: 1; }
+  50%,100% { opacity: 0; }
+}
+/* 逐字错峰：每个字包 <span class="ib-stagger" style="--i:0">，--i 从 0 递增 */
+.slide.on .ib-stagger {
+  animation: aText var(--t-fast) calc(var(--idle-start) + var(--i, 0) * .18s) var(--idle-ease) infinite;
+}
+.slide.on .ib-tick { animation: aTick var(--t-fast) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aTick {
+  0%,100% { transform: translate3d(0, 0, 0); }
+  50%     { transform: translate3d(0, -6px, 0); }
+}
+
+/* ===== E 装饰图形层（6 种）=================================== */
+.slide.on .ib-spin { animation: aSpin var(--t-rotate) linear infinite; }
+@keyframes aSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.slide.on .ib-spin-rev { animation: aSpin var(--t-rotate) linear infinite reverse; }
+.slide.on .ib-line { animation: aLine var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aLine {
+  0%,100% { transform: scaleX(1.00); opacity: 1; }
+  50%     { transform: scaleX(1.28); opacity: .55; }
+}
+.slide.on .ib-ring { animation: aRing var(--t-fast) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aRing {
+  0%,100% { transform: scale(1.00); opacity: .25; }
+  50%     { transform: scale(var(--zoom-s)); opacity: .95; }
+}
+.slide.on .ib-dots { animation: aDots var(--t-slow) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aDots {
+  0%,100% { transform: translate3d(0, 0, 0); opacity: .35; }
+  50%     { transform: translate3d(var(--amp-m), calc(-1 * var(--amp-m)), 0); opacity: .9; }
+}
+/* 内容需复制两遍，滚到 -50% 时正好接上，跳回才不露馅 */
+.slide.on .ib-marquee { animation: aMarquee var(--t-slow) linear infinite; }
+@keyframes aMarquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, -50%, 0); }
+}
+
+/* ===== F 强可见层（6 种）· 专门解决「动了但看不见」============
+   这层的特点：变化面积大、周期短、幅度足。每页至少从中挑一个当主运动。 */
+.slide.on .ib-beam { animation: aBeam var(--t-mid) var(--idle-start) linear infinite; }
+@keyframes aBeam {
+  0%   { transform: skewX(-18deg) translate3d(-170%, 0, 0); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: skewX(-18deg) translate3d(170%, 0, 0); opacity: 0; }
+}
+.slide.on .ib-particles { animation: aParticles var(--t-slow) var(--idle-start) linear infinite; }
+@keyframes aParticles {
+  0%   { transform: translate3d(0, 8%, 0); opacity: 0; }
+  18%  { opacity: .85; }
+  82%  { opacity: .85; }
+  100% { transform: translate3d(var(--amp-s), -18%, 0); opacity: 0; }
+}
+.slide.on .ib-maskflow { animation: aMaskFlow var(--t-med) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aMaskFlow {
+  0%,100% { transform: translate3d(calc(-1 * var(--amp-flow)), 0, 0) scale(1.10); opacity: .35; }
+  50%     { transform: translate3d(var(--amp-flow), 0, 0) scale(1.10); opacity: .95; }
+}
+.slide.on .ib-edge { animation: aEdge var(--t-mid) var(--idle-start) var(--idle-ease) infinite; }
+@keyframes aEdge {
+  0%,100% { transform: scaleX(1.00); opacity: .3; }
+  50%     { transform: scaleX(1.35); opacity: 1; }
+}
+/* 逐字波浪：每个字包 <span class="ib-wave" style="--i:0">，比 .ib-stagger 幅度大得多 */
+.slide.on .ib-wave {
+  animation: aWave var(--t-fast) calc(var(--idle-start) + var(--i, 0) * .13s) var(--idle-ease) infinite;
+}
+@keyframes aWave {
+  0%,100% { transform: translate3d(0, 0, 0); opacity: .88; }
+  50%     { transform: translate3d(0, calc(-1 * var(--rise-wave)), 0); opacity: 1; }
+}
+.slide.on .ib-orbit { animation: aOrbit var(--t-med) var(--idle-start) linear infinite; }
+@keyframes aOrbit {
+  0%   { transform: translate3d(var(--orbit-r), 0, 0); }
+  25%  { transform: translate3d(0, var(--orbit-r), 0); }
+  50%  { transform: translate3d(calc(-1 * var(--orbit-r)), 0, 0); }
+  75%  { transform: translate3d(0, calc(-1 * var(--orbit-r)), 0); }
+  100% { transform: translate3d(var(--orbit-r), 0, 0); }
+}
+
+/* ===== 相位类（必须放在最后，否则会被上面的动画规则覆盖）==== */
+.slide.on .ph1 { animation-delay: calc(var(--idle-start) + var(--ph-1)); }
+.slide.on .ph2 { animation-delay: calc(var(--idle-start) + var(--ph-2)); }
+.slide.on .ph3 { animation-delay: calc(var(--idle-start) + var(--ph-3)); }
+
+/* ===== 静止态预置（消除入场结束时的跳变）======================
+   0% 不是「静止状态」的类，在这里把静态值设成 0% 的值。
+   不带 .on 前缀：入场期间元素就已是 0% 形态，动画挂上时无缝衔接。
+   改了上面的幅度，这里必须同步改，否则第 1.6 秒会闪一下。 */
+.ib-bg-pull        { transform: scale(var(--zoom-l)); }
+.ib-bg-turn        { transform: rotate(-3.5deg) scale(1.14); }
+.ib-bg-panx        { transform: translate3d(calc(-1 * var(--amp-m)), 0, 0); }
+.ib-bg-pany        { transform: translate3d(0, calc(-1 * var(--amp-m)), 0); }
+.ib-bg-para-back   { transform: translate3d(calc(-1 * var(--amp-l)), 0, 0) scale(1.16); }
+.ib-bg-para-front  { transform: translate3d(calc(-1 * var(--amp-s)), 0, 0); }
+.ib-img-pan        { transform: translate3d(calc(-1 * var(--amp-s)), 0, 0) scale(1.14); }
+.ib-img-tilt       { transform: perspective(1200px) rotateY(-6deg) rotateX(3deg) scale(1.06); }
+.ib-img-float      { transform: translate3d(0, var(--amp-xs), 0); }
+.ib-sweep          { transform: translate3d(-150%, 0, 0); opacity: 0; }
+.ib-beam           { transform: skewX(-18deg) translate3d(-170%, 0, 0); opacity: 0; }
+.ib-particles      { transform: translate3d(0, 8%, 0); opacity: 0; }
+.ib-glow           { opacity: var(--glow-lo); transform: translate3d(calc(-1 * var(--amp-m)), var(--amp-s), 0) scale(1.00); }
+.ib-halo           { opacity: var(--glow-lo); transform: scale(1.00); }
+.ib-vignette       { opacity: .30; transform: scale(1.00); }
+.ib-dots           { opacity: .35; }
+.ib-ring, .arring  { opacity: .25; }
+.ib-maskflow       { transform: translate3d(calc(-1 * var(--amp-flow)), 0, 0) scale(1.10); opacity: .35; }
+.ib-edge           { opacity: .3; }
+.ib-orbit          { transform: translate3d(var(--orbit-r), 0, 0); }
+
+/* ===== 降级与性能 ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .slide.on [class*="ib-"] { animation: none !important; }
+}
+.slide:not(.on) [class*="ib-"] { will-change: auto; }
+.slide.on [class*="ib-"] { will-change: transform, opacity; }

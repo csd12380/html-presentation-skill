@@ -1,17 +1,26 @@
 <!-- 单页骨架模板：每一页 slide 的结构参考 -->
 <!-- 说明：这是"结构骨架"，实际使用时把注释替换为真实内容，配色按视觉规范替换 -->
+<!-- 动效分两层：.a 管入场（一次性），.ib-* 管环境态（不翻页时持续微动），绝不落在同一元素上 -->
 <section class="slide" id="sN">
-  <!-- 文字区 -->
+
+  <!-- 背景层：容器 overflow:hidden，图片在里面缓慢推镜（环境态 48s 一轮） -->
+  <div class="bg"><img class="ib-bg" src="assets/bg.jpg" alt=""></div>
+  <!-- 光斑层：明暗与位置缓慢漂移（环境态 13s 一轮） -->
+  <div class="glow ib-glow"></div>
+
+  <!-- 文字区：外层 .a 负责上浮入场，内层 .ib-text 负责极轻呼吸 -->
   <div class="kicker a" style="--d:.1s"><b>编号</b>　小标题</div>
-  <h2 class="a" style="--d:.18s">页面大标题</h2>
+  <h2 class="a" style="--d:.18s"><span class="ib-text">页面大标题</span></h2>
   <div class="rule a" style="--d:.28s"></div>
   <p class="lead a" style="--d:.36s">正文（≤60字，讲清这一页唯一观点）</p>
+  <!-- 正文段落不加环境态：字一多还微动，读起来就散了 -->
 
-  <!-- 图片区：从融入方式库选一种手法，替换 class -->
+  <!-- 图片区：.shot 管入场，img 自己管缓慢推近。从融入方式库选一种手法，替换 class -->
   <div class="shot 【融入手法class】" style="--d:.3s">
     <div class="frame" style="aspect-ratio:16/9">
-      <img src="assets/xxx.jpg" alt="图注">
+      <img class="ib-img" src="assets/xxx.jpg" alt="图注">
     </div>
     <div class="tag a" style="--d:.6s">图注 · 小字说明</div>
   </div>
+
 </section>
